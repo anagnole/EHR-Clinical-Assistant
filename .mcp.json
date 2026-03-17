@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "thesis-ehr": {
+      "command": "bash",
+      "args": ["/Users/anagnole/Projects/ThesisBrainifai/start-mcp.sh"]
+    }
+  }
+}

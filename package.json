@@ -1,0 +1,21 @@
+{
+  "name": "thesis-brainifai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/generate.ts",
+    "ingest": "tsx src/ingest.ts",
+    "verify": "tsx src/verify.ts"
+  },
+  "dependencies": {
+    "csv-parse": "^5.6.0",
+    "kuzu": "^0.11.3",
+    "stream-json": "^1.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+data/generated/
+dist/
+.brainifai/
+.tmp-csv/
+*.log
+.DS_Store
