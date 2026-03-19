@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: thesis_ehr_pg
+    environment:
+      POSTGRES_DB: ehrdb
+      POSTGRES_USER: user
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

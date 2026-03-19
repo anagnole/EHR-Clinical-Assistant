@@ -1,7 +1,24 @@
 node_modules/
-data/generated/
 dist/
-.brainifai/
+
+# Generated data (reproducible via `npm run generate`)
+data/generated/
 .tmp-csv/
-*.log
+
+# Brainifai instance data
+.brainifai/
+
+# Environment & secrets
+.env
+.env.*
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
