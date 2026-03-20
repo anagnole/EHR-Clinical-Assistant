@@ -12,18 +12,37 @@
     "pg:ingest": "tsx src/sql/ingest.ts",
     "pg:verify": "tsx src/sql/verify.ts",
     "prompt:verify": "tsx src/prompt/verify.ts",
-    "eval": "tsx src/eval/run.ts"
+    "eval": "tsx src/eval/run.ts",
+    "ui:dev": "concurrently \"tsx src/api/server.ts\" \"vite --config src/ui/vite.config.ts\"",
+    "ui:build": "vite build --config src/ui/vite.config.ts",
+    "ui": "npm run ui:build && tsx src/api/server.ts"
   },
   "dependencies": {
     "@anagnole/claude-cli-wrapper": "^0.1.2",
+    "@fastify/cors": "^11.2.0",
+    "@fastify/static": "^9.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
     "csv-parse": "^5.6.0",
+    "fastify": "^5.8.2",
+    "graphology": "^0.26.0",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "graphology-layout-noverlap": "^0.4.2",
     "kuzu": "^0.11.3",
     "pg": "^8.20.0",
-    "stream-json": "^1.9.1"
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
+    "sigma": "^3.0.2",
+    "stream-json": "^1.9.1",
+    "vite": "^8.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/pg": "^8.18.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

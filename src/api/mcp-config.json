@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "thesis-ehr": {
+      "command": "bash",
+      "args": ["start-mcp.sh"]
+    }
+  }
+}
