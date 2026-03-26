@@ -6,7 +6,6 @@ import {
   runLayout,
 } from "./graph-builder.js";
 import { fetchNeighborhood } from "./api.js";
-import { parseToolUse } from "./tool-result-parser.js";
 import type { Subgraph } from "../../api/types.js";
 
 interface UseGraphReturn {
@@ -48,9 +47,72 @@ export function useGraph(): UseGraphReturn {
   );
 
   const addFromToolEvent = useCallback(
-    (tool: string, input: Record<string, unknown>) => {
-      const subgraph = parseToolUse(tool, input);
-      if (subgraph) addSubgraph(subgraph);
+    async (tool: string, input: Record<string, unknown>) => {
+      // Strip MCP server prefix (e.g., "mcp__thesis-ehr__find_cohort" → "find_cohort")
+      const toolName = tool.replace(/^mcp__[^_]+__/, "");
+      // Skip internal tools (ToolSearch, etc.)
+      if (tool === toolName && tool !== "find_cohort") return;
+      console.log("[graph] tool event:", toolName, input);
+      const patientId = input.patient_id as string | undefined;
+
+      switch (toolName) {
+        case "get_patient_summary":
+        case "get_medications":
+        case "get_diagnoses":
+        case "get_labs": {
+          // Expand the patient node with their full neighborhood
+          if (patientId) {
+            const subgraph = await fetchNeighborhood(patientId, "Patient");
+            addSubgraph(subgraph);
+            setSelectedNode(patientId);
+          }
+          break;
+        }
+
+        case "find_cohort": {
+          // Expand based on conditions searched — find the concept nodes
+          const conditions = input.conditions as string[] | undefined;
+          if (conditions && conditions.length > 0) {
+            // Search for the first condition concept and expand it
+            try {
+              const { searchGraphNodes } = await import("./api.js");
+              const results = await searchGraphNodes(conditions[0], 1);
+              if (results.length > 0) {
+                const subgraph = await fetchNeighborhood(results[0].id, results[0].type);
+                addSubgraph(subgraph);
+                setSelectedNode(results[0].id);
+              }
+            } catch { /* ignore */ }
+          }
+          break;
+        }
+
+        case "search_patients": {
+          // Search and expand the first result
+          const query = input.query as string | undefined;
+          if (query) {
+            try {
+              const { searchGraphNodes } = await import("./api.js");
+              const results = await searchGraphNodes(query, 1);
+              if (results.length > 0) {
+                const subgraph = await fetchNeighborhood(results[0].id, results[0].type);
+                addSubgraph(subgraph);
+                setSelectedNode(results[0].id);
+              }
+            } catch { /* ignore */ }
+          }
+          break;
+        }
+
+        case "get_temporal_relation": {
+          if (patientId) {
+            const subgraph = await fetchNeighborhood(patientId, "Patient");
+            addSubgraph(subgraph);
+            setSelectedNode(patientId);
+          }
+          break;
+        }
+      }
     },
     [addSubgraph],
   );

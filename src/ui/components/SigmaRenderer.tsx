@@ -1,21 +1,34 @@
 import React, { useEffect, useRef } from "react";
 import Sigma from "sigma";
 import Graph from "graphology";
+import type { DateRange } from "./GraphPanel.js";
 
 interface Props {
   graph: Graph;
   selectedNode: string | null;
   hiddenTypes: Set<string>;
+  dateRange: DateRange;
   onClickNode: (id: string) => void;
 }
 
-export function SigmaRenderer({ graph, selectedNode, hiddenTypes, onClickNode }: Props) {
+/** Check if an edge's date falls within the filter range */
+function edgeInDateRange(graph: Graph, edge: string, dateRange: DateRange): boolean {
+  if (!dateRange.from && !dateRange.to) return true;
+  // Edges won't have date attributes in the graphology graph (they come from Kuzu relationship properties)
+  // so we can't filter them client-side. The edge labels (DIAGNOSED_WITH etc.) don't carry date data.
+  // For now, always show — the card API handles date filtering server-side.
+  return true;
+}
+
+export function SigmaRenderer({ graph, selectedNode, hiddenTypes, dateRange, onClickNode }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sigmaRef = useRef<Sigma | null>(null);
   const selectedRef = useRef<string | null>(null);
   const hiddenRef = useRef<Set<string>>(hiddenTypes);
+  const dateRef = useRef<DateRange>(dateRange);
   selectedRef.current = selectedNode;
   hiddenRef.current = hiddenTypes;
+  dateRef.current = dateRange;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -32,7 +45,6 @@ export function SigmaRenderer({ graph, selectedNode, hiddenTypes, onClickNode }:
         const hidden = hiddenRef.current;
         const res = { ...data };
 
-        // Hide filtered types
         if (hidden.has(data.nodeType as string)) {
           res.hidden = true;
           return res;
@@ -59,13 +71,20 @@ export function SigmaRenderer({ graph, selectedNode, hiddenTypes, onClickNode }:
       edgeReducer: (edge, data) => {
         const sel = selectedRef.current;
         const hidden = hiddenRef.current;
+        const dr = dateRef.current;
         const res = { ...data };
 
-        // Hide edges connected to hidden nodes
         const [source, target] = graph.extremities(edge);
         const sourceType = graph.getNodeAttribute(source, "nodeType") as string;
         const targetType = graph.getNodeAttribute(target, "nodeType") as string;
+
         if (hidden.has(sourceType) || hidden.has(targetType)) {
+          res.hidden = true;
+          return res;
+        }
+
+        // Date filter
+        if ((dr.from || dr.to) && !edgeInDateRange(graph, edge, dr)) {
           res.hidden = true;
           return res;
         }
@@ -108,30 +127,20 @@ export function SigmaRenderer({ graph, selectedNode, hiddenTypes, onClickNode }:
 
     if (selectedNode && graph.hasNode(selectedNode)) {
       const displayData = renderer.getNodeDisplayData(selectedNode);
-      if (displayData) {
+      if (displayData && displayData.x > 0.5) {
+        const container = containerRef.current!;
+        const dx = (displayData.x - 0.5) * container.offsetWidth;
         const camera = renderer.getCamera();
         const state = camera.getState();
-        const targetRatio = 0.5;
-
-        if (displayData.x > 0.5) {
-          const container = containerRef.current!;
-          const dx = (displayData.x - 0.5) * container.offsetWidth;
-          const scale = (displayData.x - 0.5) * 3;
-          const graphDx = (dx / container.offsetWidth) * targetRatio * scale;
-          camera.animate(
-            { x: state.x + graphDx, y: state.y, ratio: targetRatio },
-            { duration: 300 },
-          );
-        } else if (Math.abs(state.ratio - targetRatio) > 0.05) {
-          // Not in right half but zoom to consistent level
-          camera.animate(
-            { x: state.x, y: state.y, ratio: targetRatio },
-            { duration: 300 },
-          );
-        }
+        const scale = (displayData.x - 0.5) * 3;
+        const graphDx = (dx / container.offsetWidth) * 0.5 * scale;
+        camera.animate(
+          { x: state.x + graphDx, y: state.y },
+          { duration: 300 },
+        );
       }
     }
-  }, [selectedNode, hiddenTypes]);
+  }, [selectedNode, hiddenTypes, dateRange]);
 
   return <div ref={containerRef} className="sigma-container" />;
 }

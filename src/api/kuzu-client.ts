@@ -9,6 +9,16 @@ const DB_PATH = path.resolve(__dirname, "../../.brainifai/data/kuzu");
 let db: kuzu.Database | null = null;
 let conn: kuzu.Connection | null = null;
 
+// Kuzu connections are not thread-safe — serialize all queries
+let queryLock: Promise<unknown> = Promise.resolve();
+
+export function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  const prev = queryLock;
+  let resolve: () => void;
+  queryLock = new Promise<void>((r) => { resolve = r; });
+  return prev.then(fn).finally(() => resolve!());
+}
+
 // Primary key per node type
 const PK: Record<string, string> = {
   Patient: "patient_id",
@@ -38,8 +48,10 @@ export async function closeConnection(): Promise<void> {
 }
 
 async function q(c: kuzu.Connection, cypher: string): Promise<Record<string, unknown>[]> {
-  const result = await c.query(cypher);
-  return await result.getAll() as Record<string, unknown>[];
+  return withLock(async () => {
+    const result = await c.query(cypher);
+    return await result.getAll() as Record<string, unknown>[];
+  });
 }
 
 function nodeLabel(type: string, row: Record<string, unknown>): string {
@@ -56,10 +68,29 @@ function nodeLabel(type: string, row: Record<string, unknown>): string {
   }
 }
 
+// Date filter clause for a relationship variable 'r' — returns empty string if no filter
+function relDateFilter(rel: string, dateFrom?: string, dateTo?: string): string {
+  // Map relationship types to their date column
+  const dateCol: Record<string, string> = {
+    DIAGNOSED_WITH: "start_date",
+    PRESCRIBED: "start_date",
+    HAS_RESULT: "date",
+    UNDERWENT: "start_date",
+  };
+  const col = dateCol[rel];
+  if (!col) return ""; // No date filtering for non-clinical rels
+  const parts: string[] = [];
+  if (dateFrom) parts.push(`r.${col} >= '${dateFrom}'`);
+  if (dateTo) parts.push(`r.${col} <= '${dateTo}'`);
+  return parts.length > 0 ? " AND " + parts.join(" AND ") : "";
+}
+
 export async function neighborhoodQuery(
   nodeId: string,
   nodeType: string,
   maxNodes = 30,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<Subgraph> {
   const c = await getConnection();
   const nodes: SubgraphNode[] = [];
@@ -99,8 +130,10 @@ export async function neighborhoodQuery(
     const perType = Math.max(3, Math.floor(maxNodes / relTypes.length));
     const allRows: Record<string, unknown>[] = [];
     for (const rel of relTypes) {
+      const dateWhere = relDateFilter(rel, dateFrom, dateTo);
       const rows = await q(c,
         `MATCH (n:${nodeType} {${pk}: '${safeId}'})-[r:${rel}]-(m)
+         WHERE true${dateWhere}
          RETURN label(m) AS mtype, label(r) AS rtype,
                 m.description AS mdescription, m.name AS mname,
                 m.first_name AS fn, m.last_name AS ln, m.code AS mcode,
@@ -194,4 +227,256 @@ export async function searchNodes(
 
   results.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   return results.slice(0, limit);
+}
+
+export async function getNodeCard(
+  nodeId: string,
+  nodeType: string,
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<Record<string, unknown>> {
+  const c = await getConnection();
+  const safeId = nodeId.replace(/'/g, "''");
+
+  // Date filters per relationship type (different date column names)
+  function dateClauses(col: string): string {
+    const parts: string[] = [];
+    if (dateFrom) parts.push(`r.${col} >= '${dateFrom}'`);
+    if (dateTo) parts.push(`r.${col} <= '${dateTo}'`);
+    return parts.length > 0 ? " AND " + parts.join(" AND ") : "";
+  }
+  const encDateParts: string[] = [];
+  if (dateFrom) encDateParts.push(`e.start_date >= '${dateFrom}'`);
+  if (dateTo) encDateParts.push(`e.start_date <= '${dateTo}'`);
+  const encDateWhere = encDateParts.length > 0 ? " AND " + encDateParts.join(" AND ") : "";
+
+  switch (nodeType) {
+    case "Patient": {
+      const [patient] = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})
+         RETURN p.first_name AS first_name, p.last_name AS last_name,
+                p.birth_date AS birth_date, p.death_date AS death_date,
+                p.gender AS gender, p.race AS race, p.city AS city, p.state AS state`);
+      if (!patient) return { type: nodeType, error: "Not found" };
+
+      const [condCount] = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})-[r:DIAGNOSED_WITH]->(c:ConceptCondition)
+         WHERE true${dateClauses("start_date")}
+         RETURN count(c) AS cnt`);
+      const [medCount] = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})-[r:PRESCRIBED]->(m:ConceptMedication)
+         WHERE true${dateClauses("start_date")}
+         RETURN count(m) AS cnt`);
+      const [encCount] = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})-[:HAD_ENCOUNTER]->(e:Encounter)
+         WHERE true${encDateWhere}
+         RETURN count(e) AS cnt`);
+
+      // Active conditions within date range
+      const activeConds = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})-[r:DIAGNOSED_WITH]->(c:ConceptCondition)
+         WHERE (r.stop_date IS NULL OR r.stop_date = '')${dateClauses("start_date")}
+         RETURN c.description AS description LIMIT 5`);
+
+      // Active medications within date range
+      const activeMeds = await q(c,
+        `MATCH (p:Patient {patient_id: '${safeId}'})-[r:PRESCRIBED]->(m:ConceptMedication)
+         WHERE (r.stop_date IS NULL OR r.stop_date = '')${dateClauses("start_date")}
+         RETURN m.description AS description LIMIT 5`);
+
+      const age = patient.birth_date
+        ? Math.floor((Date.now() - new Date(patient.birth_date as string).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : null;
+
+      return {
+        type: "Patient",
+        name: `${patient.first_name} ${patient.last_name}`,
+        age,
+        gender: patient.gender,
+        race: patient.race,
+        location: `${patient.city}, ${patient.state}`,
+        alive: !patient.death_date,
+        conditionCount: (condCount?.cnt as number) ?? 0,
+        medicationCount: (medCount?.cnt as number) ?? 0,
+        encounterCount: (encCount?.cnt as number) ?? 0,
+        activeConditions: activeConds.map(r => r.description as string),
+        activeMedications: activeMeds.map(r => r.description as string),
+      };
+    }
+
+    case "ConceptCondition": {
+      const [node] = await q(c,
+        `MATCH (c:ConceptCondition {code: '${safeId}'})
+         RETURN c.description AS description, c.system AS system, c.code AS code`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const [patCount] = await q(c,
+        `MATCH (p:Patient)-[:DIAGNOSED_WITH]->(c:ConceptCondition {code: '${safeId}'})
+         RETURN count(DISTINCT p) AS cnt`);
+      const treatments = await q(c,
+        `MATCH (m:ConceptMedication)-[:TREATS]->(c:ConceptCondition {code: '${safeId}'})
+         RETURN m.description AS description LIMIT 5`);
+      const complications = await q(c,
+        `MATCH (comp:ConceptCondition)-[:COMPLICATION_OF]->(c:ConceptCondition {code: '${safeId}'})
+         RETURN comp.description AS description LIMIT 5`);
+
+      return {
+        type: "Condition",
+        description: node.description,
+        code: node.code,
+        system: node.system,
+        patientCount: (patCount?.cnt as number) ?? 0,
+        treatments: treatments.map(r => r.description as string),
+        complications: complications.map(r => r.description as string),
+      };
+    }
+
+    case "ConceptMedication": {
+      const [node] = await q(c,
+        `MATCH (m:ConceptMedication {code: '${safeId}'})
+         RETURN m.description AS description, m.code AS code`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const [patCount] = await q(c,
+        `MATCH (p:Patient)-[:PRESCRIBED]->(m:ConceptMedication {code: '${safeId}'})
+         RETURN count(DISTINCT p) AS cnt`);
+      const treatsConditions = await q(c,
+        `MATCH (m:ConceptMedication {code: '${safeId}'})-[:TREATS]->(c:ConceptCondition)
+         RETURN c.description AS description LIMIT 5`);
+
+      return {
+        type: "Medication",
+        description: node.description,
+        code: node.code,
+        patientCount: (patCount?.cnt as number) ?? 0,
+        treatsConditions: treatsConditions.map(r => r.description as string),
+      };
+    }
+
+    case "ConceptObservation": {
+      const [node] = await q(c,
+        `MATCH (o:ConceptObservation {code: '${safeId}'})
+         RETURN o.description AS description, o.code AS code, o.category AS category,
+                o.units AS units, o.type AS type`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const [patCount] = await q(c,
+        `MATCH (p:Patient)-[:HAS_RESULT]->(o:ConceptObservation {code: '${safeId}'})
+         RETURN count(DISTINCT p) AS cnt`);
+
+      return {
+        type: "Observation",
+        description: node.description,
+        code: node.code,
+        category: node.category,
+        units: node.units,
+        valueType: node.type,
+        patientCount: (patCount?.cnt as number) ?? 0,
+      };
+    }
+
+    case "ConceptProcedure": {
+      const [node] = await q(c,
+        `MATCH (pr:ConceptProcedure {code: '${safeId}'})
+         RETURN pr.description AS description, pr.code AS code, pr.system AS system`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const [patCount] = await q(c,
+        `MATCH (p:Patient)-[:UNDERWENT]->(pr:ConceptProcedure {code: '${safeId}'})
+         RETURN count(DISTINCT p) AS cnt`);
+      const indications = await q(c,
+        `MATCH (pr:ConceptProcedure {code: '${safeId}'})-[:INDICATED_BY]->(c:ConceptCondition)
+         RETURN c.description AS description LIMIT 5`);
+
+      return {
+        type: "Procedure",
+        description: node.description,
+        code: node.code,
+        system: node.system,
+        patientCount: (patCount?.cnt as number) ?? 0,
+        indications: indications.map(r => r.description as string),
+      };
+    }
+
+    case "Encounter": {
+      const [node] = await q(c,
+        `MATCH (e:Encounter {encounter_id: '${safeId}'})
+         RETURN e.description AS description, e.encounter_class AS encounter_class,
+                e.start_date AS start_date, e.stop_date AS stop_date,
+                e.reason_description AS reason_description, e.patient_id AS patient_id`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      // Get patient name
+      const [pat] = await q(c,
+        `MATCH (p:Patient {patient_id: '${(node.patient_id as string).replace(/'/g, "''")}' })
+         RETURN p.first_name AS fn, p.last_name AS ln`);
+
+      // Get provider
+      const provRows = await q(c,
+        `MATCH (e:Encounter {encounter_id: '${safeId}'})-[:TREATED_BY]->(prov:Provider)
+         RETURN prov.name AS name LIMIT 1`);
+
+      // Get organization
+      const orgRows = await q(c,
+        `MATCH (e:Encounter {encounter_id: '${safeId}'})-[:AT_ORGANIZATION]->(org:Organization)
+         RETURN org.name AS name LIMIT 1`);
+
+      return {
+        type: "Encounter",
+        description: node.description,
+        encounterClass: node.encounter_class,
+        startDate: node.start_date,
+        stopDate: node.stop_date,
+        reason: node.reason_description,
+        patient: pat ? `${pat.fn} ${pat.ln}` : null,
+        provider: provRows[0]?.name ?? null,
+        organization: orgRows[0]?.name ?? null,
+      };
+    }
+
+    case "Provider": {
+      const [node] = await q(c,
+        `MATCH (prov:Provider {provider_id: '${safeId}'})
+         RETURN prov.name AS name, prov.specialty AS specialty, prov.gender AS gender`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const orgRows = await q(c,
+        `MATCH (prov:Provider {provider_id: '${safeId}'})-[:AFFILIATED_WITH]->(org:Organization)
+         RETURN org.name AS name LIMIT 1`);
+      const [patCount] = await q(c,
+        `MATCH (e:Encounter)-[:TREATED_BY]->(prov:Provider {provider_id: '${safeId}'})
+         RETURN count(DISTINCT e.patient_id) AS cnt`);
+
+      return {
+        type: "Provider",
+        name: node.name,
+        specialty: node.specialty,
+        gender: node.gender,
+        organization: orgRows[0]?.name ?? null,
+        patientCount: (patCount?.cnt as number) ?? 0,
+      };
+    }
+
+    case "Organization": {
+      const [node] = await q(c,
+        `MATCH (org:Organization {organization_id: '${safeId}'})
+         RETURN org.name AS name, org.city AS city, org.state AS state, org.phone AS phone`);
+      if (!node) return { type: nodeType, error: "Not found" };
+
+      const [provCount] = await q(c,
+        `MATCH (prov:Provider)-[:AFFILIATED_WITH]->(org:Organization {organization_id: '${safeId}'})
+         RETURN count(prov) AS cnt`);
+
+      return {
+        type: "Organization",
+        name: node.name,
+        location: `${node.city}, ${node.state}`,
+        phone: node.phone,
+        providerCount: (provCount?.cnt as number) ?? 0,
+      };
+    }
+
+    default:
+      return { type: nodeType, id: nodeId };
+  }
 }

@@ -15,6 +15,7 @@ export interface EvalQuestion {
 export interface RunResult {
   questionId: string;
   system: 'graph' | 'sql' | 'sql-fts' | 'llm-only';
+  model: string;
   answer: string;
   latencyMs: number;
   error?: string;

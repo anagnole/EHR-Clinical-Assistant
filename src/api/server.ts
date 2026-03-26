@@ -4,9 +4,11 @@ import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 import fastifyCors from "@fastify/cors";
 import fastifyWebsocket from "@fastify/websocket";
-import { getClaudeProcess } from "./claude-process.js";
+import { getClaudeProcess, registry } from "./claude-process.js";
 import { chatRoute } from "./routes/chat.js";
 import { graphRoutes } from "./routes/graph.js";
+import { templateRoutes } from "./routes/templates.js";
+import { documentRoutes } from "./routes/documents.js";
 import { closeConnection } from "./kuzu-client.js";
 
 const app = Fastify({ logger: true });
@@ -33,9 +35,25 @@ app.setNotFoundHandler(async (req, reply) => {
   return reply.sendFile("index.html");
 });
 
+// Models endpoint — only show models that support tool calling
+// Ollama doesn't expose this via API, so we maintain a blocklist of families that don't
+const NO_TOOL_SUPPORT = ["gemma", "llama3.2", "phi", "deepseek"];
+
+app.get("/api/models", async () => {
+  const all = await registry.listAllModels();
+  const models = all.filter((m) => {
+    if (m.provider === "claude-cli") return true;
+    const name = m.id.toLowerCase();
+    return !NO_TOOL_SUPPORT.some((prefix) => name.startsWith(prefix));
+  });
+  return { models };
+});
+
 // Routes
 await app.register(chatRoute, { prefix: "/api" });
 await app.register(graphRoutes, { prefix: "/api" });
+await app.register(templateRoutes, { prefix: "/api" });
+await app.register(documentRoutes, { prefix: "/api" });
 
 // Graceful shutdown
 async function shutdown() {

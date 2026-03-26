@@ -17,6 +17,8 @@ interface UseChatReturn {
   messages: ChatMessage[];
   status: Status;
   send: (content: string) => void;
+  setModel: (model: string) => void;
+  currentModel: string;
   toolEvents: ToolEvent[];
 }
 
@@ -24,6 +26,7 @@ export function useChat(): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [status, setStatus] = useState<Status>("connecting");
   const [toolEvents, setToolEvents] = useState<ToolEvent[]>([]);
+  const [currentModel, setCurrentModel] = useState("claude-sonnet-4-6");
   const wsRef = useRef<WebSocket | null>(null);
   const msgIdRef = useRef(0);
 
@@ -39,6 +42,7 @@ export function useChat(): UseChatReturn {
 
       switch (msg.type) {
         case "text_delta":
+          if (msg.text.includes("|")) console.log("DELTA:", JSON.stringify(msg.text));
           setMessages((prev) => {
             const last = prev[prev.length - 1];
             if (last?.role === "assistant") {
@@ -72,6 +76,10 @@ export function useChat(): UseChatReturn {
             { tool: msg.tool, input: msg.input },
           ]);
           break;
+
+        case "model_changed":
+          setCurrentModel(msg.model);
+          break;
       }
     };
 
@@ -100,5 +108,11 @@ export function useChat(): UseChatReturn {
     ws.send(JSON.stringify({ type: "user_message", content }));
   }, []);
 
-  return { messages, status, send, toolEvents };
+  const setModel = useCallback((model: string) => {
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: "set_model", model }));
+  }, []);
+
+  return { messages, status, send, setModel, currentModel, toolEvents };
 }

@@ -3,12 +3,14 @@
  * scores results, and generates reports.
  *
  * Usage:
- *   npm run eval                          # run all systems
- *   npm run eval -- --system graph        # run only graph
- *   npm run eval -- --limit 5             # first 5 questions only
- *   npm run eval -- --skip-type cohort    # skip cohort questions
- *   npm run eval -- --timeout 60000       # 60s per question timeout
- *   npm run eval -- --resume              # load previous results, skip completed
+ *   npm run eval                                  # run all systems with Claude
+ *   npm run eval -- --model gemma3:27b            # run with Ollama model
+ *   npm run eval -- --model gemma3:27b --system llm-only  # specific system + model
+ *   npm run eval -- --system graph                # run only graph (Claude only)
+ *   npm run eval -- --limit 5                     # first 5 questions only
+ *   npm run eval -- --skip-type cohort            # skip cohort questions
+ *   npm run eval -- --timeout 60000               # 60s per question timeout
+ *   npm run eval -- --resume                      # load previous results, skip completed
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
@@ -21,7 +23,6 @@ import { generateReport } from './report.js';
 
 const PROJECT_ROOT = join(import.meta.dirname, '../..');
 const RESULTS_DIR = join(PROJECT_ROOT, 'results');
-const INCREMENTAL_FILE = join(RESULTS_DIR, 'incremental.json');
 const PG_DSN = process.env.PG_DSN ?? 'postgresql://user@localhost:5432/ehrdb';
 
 type System = 'graph' | 'sql' | 'sql-fts' | 'llm-only';
@@ -37,12 +38,21 @@ async function main() {
   const limitArg = getArg(args, '--limit');
   const skipType = getArg(args, '--skip-type');
   const timeoutArg = getArg(args, '--timeout');
+  const modelArg = getArg(args, '--model');
   const resume = args.includes('--resume');
 
+  const model = modelArg ?? 'claude-sonnet-4-6';
   const limit = limitArg ? parseInt(limitArg) : undefined;
   const timeout = timeoutArg ? parseInt(timeoutArg) : 120_000;
 
+  const isClaude = model.startsWith('claude-');
   const systems: System[] = systemArg ? [systemArg] : ['graph', 'sql', 'sql-fts', 'llm-only'];
+
+  // Per-model results file so runs don't overwrite each other
+  const modelSlug = model.replace(/[:/]/g, '-');
+  const INCREMENTAL_FILE = join(RESULTS_DIR, `incremental-${modelSlug}.json`);
+
+  console.log(`Model: ${model} (${isClaude ? 'Claude CLI + MCP' : 'Ollama + native tools'})\n`);
 
   // Load questions
   let questions: EvalQuestion[] = JSON.parse(
@@ -124,10 +134,10 @@ async function main() {
         try {
           const runPromise = (async () => {
             switch (system) {
-              case 'graph': return runGraph(q);
-              case 'sql': return runSql(q, pool!);
-              case 'sql-fts': return runSqlFts(q, pool!);
-              case 'llm-only': return runLlmOnly(q);
+              case 'graph': return runGraph(q, model);
+              case 'sql': return runSql(q, pool!, model);
+              case 'sql-fts': return runSqlFts(q, pool!, model);
+              case 'llm-only': return runLlmOnly(q, model);
             }
           })();
 
@@ -140,6 +150,7 @@ async function main() {
           result = {
             questionId: q.id,
             system,
+            model,
             answer: '',
             latencyMs: 0,
             error: err instanceof Error ? err.message : String(err),

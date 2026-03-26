@@ -4,8 +4,14 @@ import { SigmaRenderer } from "./SigmaRenderer.js";
 import { GraphSearch } from "./GraphSearch.js";
 import { GraphLegend } from "./GraphLegend.js";
 import { NodeDetail } from "./NodeDetail.js";
+import { DateFilter } from "./DateFilter.js";
 import { fetchNeighborhood } from "../lib/api.js";
 import type { Subgraph, SearchResult } from "../../api/types.js";
+
+export interface DateRange {
+  from: string;
+  to: string;
+}
 
 interface Props {
   graph: Graph;
@@ -13,6 +19,7 @@ interface Props {
   onSelectNode: (id: string | null) => void;
   onExpandNode: (id: string, type: string) => Promise<void>;
   onAddSubgraph: (subgraph: Subgraph) => void;
+  onAddContext: (id: string) => void;
 }
 
 export function GraphPanel({
@@ -21,8 +28,10 @@ export function GraphPanel({
   onSelectNode,
   onExpandNode,
   onAddSubgraph,
+  onAddContext,
 }: Props) {
   const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set());
+  const [dateRange, setDateRange] = useState<DateRange>({ from: "", to: "" });
 
   const handleToggleType = useCallback((type: string) => {
     setHiddenTypes((prev) => {
@@ -34,7 +43,7 @@ export function GraphPanel({
   }, []);
 
   const handleSearchSelect = async (result: SearchResult) => {
-    const subgraph = await fetchNeighborhood(result.id, result.type);
+    const subgraph = await fetchNeighborhood(result.id, result.type, 30, dateRange.from || undefined, dateRange.to || undefined);
     onAddSubgraph(subgraph);
     onSelectNode(result.id);
   };
@@ -50,12 +59,22 @@ export function GraphPanel({
         <GraphSearch onSelect={handleSearchSelect} />
       </div>
 
+      <div className="graph-toolbar">
+        <DateFilter
+          from={dateRange.from}
+          to={dateRange.to}
+          onChange={(from, to) => setDateRange({ from, to })}
+          onClear={() => setDateRange({ from: "", to: "" })}
+        />
+      </div>
+
       <div className="graph-canvas-container">
         {graph.order > 0 ? (
           <SigmaRenderer
             graph={graph}
             selectedNode={selectedNode}
             hiddenTypes={hiddenTypes}
+            dateRange={dateRange}
             onClickNode={handleClickNode}
           />
         ) : (
@@ -71,9 +90,14 @@ export function GraphPanel({
         <NodeDetail
           graph={graph}
           nodeId={selectedNode}
+          dateRange={dateRange}
           onClose={() => onSelectNode(null)}
-          onExpand={onExpandNode}
+          onExpand={(id, type) => {
+            fetchNeighborhood(id, type, 30, dateRange.from || undefined, dateRange.to || undefined)
+              .then(onAddSubgraph);
+          }}
           onSelectNode={onSelectNode}
+          onAddContext={onAddContext}
         />
       )}
     </div>

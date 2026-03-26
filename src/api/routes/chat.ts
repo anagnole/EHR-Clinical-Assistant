@@ -32,8 +32,16 @@ export const chatRoute: FastifyPluginAsync = async (app) => {
     });
 
     const unsubToolUse = claude.onToolUse((tool, input) => {
+      console.log("[chat] tool_use:", tool, JSON.stringify(input).slice(0, 200));
       send({ type: "tool_use", tool, input });
     });
+
+    const unsubModel = claude.onModelChange((model) => {
+      send({ type: "model_changed", model });
+    });
+
+    // Send current model on connect
+    send({ type: "model_changed", model: claude.model });
 
     socket.on("message", (raw: Buffer) => {
       try {
@@ -45,6 +53,12 @@ export const chatRoute: FastifyPluginAsync = async (app) => {
           } catch {
             send({ type: "error", message: "Assistant is still thinking..." });
           }
+        } else if (msg.type === "set_model") {
+          try {
+            claude.setModel(msg.model);
+          } catch (err) {
+            send({ type: "error", message: (err as Error).message });
+          }
         }
       } catch {
         send({ type: "error", message: "Invalid message format" });
@@ -55,6 +69,7 @@ export const chatRoute: FastifyPluginAsync = async (app) => {
       unsubText();
       unsubStatus();
       unsubToolUse();
+      unsubModel();
     });
   });
 };

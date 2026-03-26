@@ -2,9 +2,9 @@
   "summaries": [
     {
       "system": "graph",
-      "overall": 0.807,
+      "overall": 0.556,
       "byType": {
-        "simple-lookup": 0.807,
+        "simple-lookup": 0.556,
         "multi-hop": 0,
         "temporal": 0,
         "cohort": 0,
@@ -13,9 +13,9 @@
       "byDomain": {
         "cardiovascular": 0.667,
         "conditions": 1,
-        "demographics": 0.7,
-        "diabetes": 0.667,
-        "medications": 1,
+        "demographics": 0,
+        "diabetes": 0,
+        "medications": 0,
         "providers": 0,
         "renal": 0,
         "labs": 0,
@@ -23,25 +23,25 @@
         "general": 0,
         "guidelines": 0
       },
-      "avgLatencyMs": 12213,
+      "avgLatencyMs": 49405,
       "errorCount": 0
     },
     {
       "system": "sql",
-      "overall": 0.76,
+      "overall": 0,
       "byType": {
-        "simple-lookup": 0.76,
+        "simple-lookup": 0,
         "multi-hop": 0,
         "temporal": 0,
         "cohort": 0,
         "reasoning": 0
       },
       "byDomain": {
-        "cardiovascular": 0.667,
-        "conditions": 1,
-        "demographics": 0.8,
-        "diabetes": 0.333,
-        "medications": 1,
+        "cardiovascular": 0,
+        "conditions": 0,
+        "demographics": 0,
+        "diabetes": 0,
+        "medications": 0,
         "providers": 0,
         "renal": 0,
         "labs": 0,
@@ -49,25 +49,25 @@
         "general": 0,
         "guidelines": 0
       },
-      "avgLatencyMs": 4766,
+      "avgLatencyMs": 0,
       "errorCount": 0
     },
     {
       "system": "sql-fts",
-      "overall": 0.76,
+      "overall": 0,
       "byType": {
-        "simple-lookup": 0.76,
+        "simple-lookup": 0,
         "multi-hop": 0,
         "temporal": 0,
         "cohort": 0,
         "reasoning": 0
       },
       "byDomain": {
-        "cardiovascular": 0.667,
-        "conditions": 1,
-        "demographics": 0.8,
-        "diabetes": 0.333,
-        "medications": 1,
+        "cardiovascular": 0,
+        "conditions": 0,
+        "demographics": 0,
+        "diabetes": 0,
+        "medications": 0,
         "providers": 0,
         "renal": 0,
         "labs": 0,
@@ -75,25 +75,25 @@
         "general": 0,
         "guidelines": 0
       },
-      "avgLatencyMs": 4843,
+      "avgLatencyMs": 0,
       "errorCount": 0
     },
     {
       "system": "llm-only",
-      "overall": 0.76,
+      "overall": 0,
       "byType": {
-        "simple-lookup": 0.76,
+        "simple-lookup": 0,
         "multi-hop": 0,
         "temporal": 0,
         "cohort": 0,
         "reasoning": 0
       },
       "byDomain": {
-        "cardiovascular": 0.667,
-        "conditions": 1,
-        "demographics": 0.8,
-        "diabetes": 0.333,
-        "medications": 1,
+        "cardiovascular": 0,
+        "conditions": 0,
+        "demographics": 0,
+        "diabetes": 0,
+        "medications": 0,
         "providers": 0,
         "renal": 0,
         "labs": 0,
@@ -101,7 +101,7 @@
         "general": 0,
         "guidelines": 0
       },
-      "avgLatencyMs": 4950,
+      "avgLatencyMs": 0,
       "errorCount": 0
     }
   ],
@@ -109,8 +109,9 @@
     {
       "questionId": "SL-10",
       "system": "graph",
-      "answer": "**134.5 mg/dL** (2024-09-24)",
-      "latencyMs": 8048,
+      "model": "qwen2.5:32b",
+      "answer": "134.5 mg/dL on 2024-09-24",
+      "latencyMs": 24140,
       "score": 0.6666666666666666,
       "scoreMethod": "fuzzy",
       "groundTruth": "134.5 mg/dL (recorded 2024-09-24)"
@@ -118,8 +119,9 @@
     {
       "questionId": "SL-29",
       "system": "graph",
-      "answer": "Here are the active conditions for **Idalia306 Brakus656**:\n\n| # | Condition | Onset Date |\n|---|-----------|------------|\n| 1 | History of coronary artery bypass grafting | 2021-06-10 |\n| 2 | Abnormal findings diagnostic imaging heart + coronary circulation | 2021-06-03 |\n| 3 | Ischemic heart disease | 2021-05-21 |\n| 4 | Loss of teeth | 2020-06-05 |\n| 5 | Medication review due | 2020-05-15 |\n| 6 | Full-time employment | 2019-05-10 |\n| 7 | Anemia | 2010-03-19 |\n| 8 | Prediabetes | 2007-03-02 |\n| 9 | Educated to high school level | 1972-04-07 |",
-      "latencyMs": 17167,
+      "model": "qwen2.5:32b",
+      "answer": "- Medication review due\n- Educated to high school level\n- Full-time employment\n- Prediabetes\n- Anemia\n- Loss of teeth\n- Ischemic heart disease\n- Abnormal findings diagnostic imaging heart+coronary circulat\n- History of coronary artery bypass grafting",
+      "latencyMs": 16186,
       "score": 1,
       "scoreMethod": "f1",
       "groundTruth": "Abnormal findings diagnostic imaging heart+coronary circulat (finding); Anemia (disorder); Educated to high school level (finding); Full-time employment (finding); History of coronary artery bypass grafting (situation); Ischemic heart disease (disorder); Loss of teeth (disorder); Medication review due (situation); Prediabetes (finding)"
@@ -127,164 +129,12 @@
     {
       "questionId": "SL-53",
       "system": "graph",
-      "answer": "| Field | Value |\n|---|---|\n| **Name** | Idalia306 Brakus656 |\n| **Date of Birth** | February 12, 1954 |\n| **Date of Death** | June 10, 2021 |\n| **Gender** | Female |\n| **Race** | Black |\n| **Ethnicity** | Non-Hispanic |\n| **Marital Status** | Married |\n| **City** | Everett, Massachusetts |\n| **ZIP Code** | 02149 |",
-      "latencyMs": 17949,
-      "score": 0.7,
+      "model": "qwen2.5:32b",
+      "answer": "The provided data is a comprehensive medical record of a patient, including details about their recent lab results, medications, and conditions. Here’s a summary:\n\n### Patient Information:\n- **Patient ID:** Not explicitly given in the text.\n- **Date of Death:** June 18, 2021.\n\n### Recent Lab Results:\n1. **Cause of Death:** Ischemic heart disease (disorder).\n2. **Left Ventricular Ejection Fraction (LVEF):** 45.2%\n3. **Magnesium [Mass/volume] in Serum or Plasma:** 2.2 mg/dL\n4. **Carbon Dioxide [Partial pressure] in Venous Blood:** 47.5 mm[Hg]\n5. **pH of Venous and Arterial Blood:**\n   - Venous pH: 7.4\n   - Arterial pH (earlier): 6.9, then corrected to 7.0.\n6. **Activated Clotting Time (ACT) of Blood:** 115.9 s\n7. **Creatinine [Mass/volume] in Serum or Plasma:** 2.8 mg/dL\n8. **Prothrombin Time (PT):** 10.5 s, INR: 1.0\n9. **Cholesterol Levels:**\n   - Total Cholesterol: 169.2 mg/dL\n   - Triglycerides: 143.4 mg/dL\n   - LDL-Cholesterol: 84.4 mg/dL\n   - HDL-Cholesterol: 56.1 mg/dL\n\n### Medications:\n- **Active:** \n  - Ferrous sulfate 325 MG Oral Tablet (for treating iron deficiency anemia)\n  - Clopidogrel bisulfate, atorvastatin, and others for managing cardiovascular conditions.\n  \n- **Administered During Procedure:**\n  - Propofol 10 MG/ML Injection\n  - Midazolam 1 MG/ML Injectable Solution\n  - Ondansetron 2 MG/ML Injection\n\n### Conditions:\n- **Ischemic Heart Disease:** Underlying condition leading to death.\n- **Hemoglobin and Iron Deficiency:** Managed with oral iron supplements.\n\n### Recent Procedures:\n- **Coronary Artery Bypass Graft (CABG) Surgery:**\n  - CABG Grafts: 2\n  - CABG Arterial Conduits: 4\n\nThis data indicates the patient underwent critical cardiovascular interventions, including a bypass surgery and had ongoing issues with heart function as evidenced by their low ejection fraction. The lab results reflect typical monitoring during such procedures, with emphasis on blood gases, electrolytes, and clotting factors.",
+      "latencyMs": 107889,
+      "score": 0,
       "scoreMethod": "fuzzy",
       "groundTruth": "Born 1954-02-12, Gender: F, Race: black, Ethnicity: nonhispanic, Location: Everett, Massachusetts"
-    },
-    {
-      "questionId": "SL-1",
-      "system": "graph",
-      "answer": "**5.8%** — recorded on **2021-06-09**.",
-      "latencyMs": 7781,
-      "score": 0.6666666666666666,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "5.8 % (recorded 2021-06-09)"
-    },
-    {
-      "questionId": "SL-17",
-      "system": "graph",
-      "answer": "Idalia306 Brakus656 is currently taking the following medications:\n\n| Medication | Dose/Form | Start Date |\n|---|---|---|\n| Clopidogrel | 75 MG Oral Tablet | 2021-05-28 |\n| Simvastatin | 20 MG Oral Tablet | 2021-05-28 |\n| Metoprolol Succinate (24 HR ER) | 100 MG Oral Tablet | 2021-05-28 |\n| Nitroglycerin | 0.4 MG/ACTUAT Mucosal Spray | 2021-05-28 |\n| Ferrous Sulfate | 325 MG Oral Tablet | 2010-03-26 |",
-      "latencyMs": 10122,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet; Clopidogrel 75 MG Oral Tablet; ferrous sulfate 325 MG Oral Tablet; Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray; Simvastatin 20 MG Oral Tablet"
-    },
-    {
-      "questionId": "SL-10",
-      "system": "sql",
-      "answer": "134.5 mg/dL (2024-09-24)",
-      "latencyMs": 2005,
-      "score": 0.6666666666666666,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "134.5 mg/dL (recorded 2024-09-24)"
-    },
-    {
-      "questionId": "SL-29",
-      "system": "sql",
-      "answer": "1. Educated to high school level (finding) — since 1972-04-07\n2. Prediabetes (finding) — since 2007-03-02\n3. Anemia (disorder) — since 2010-03-19\n4. Full-time employment (finding) — since 2019-05-10\n5. Medication review due (situation) — since 2020-05-15\n6. Loss of teeth (disorder) — since 2020-06-05\n7. Ischemic heart disease (disorder) — since 2021-05-21\n8. Abnormal findings diagnostic imaging heart+coronary circulation (finding) — since 2021-06-03\n9. History of coronary artery bypass grafting (situation) — since 2021-06-10",
-      "latencyMs": 7618,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "Abnormal findings diagnostic imaging heart+coronary circulat (finding); Anemia (disorder); Educated to high school level (finding); Full-time employment (finding); History of coronary artery bypass grafting (situation); Ischemic heart disease (disorder); Loss of teeth (disorder); Medication review due (situation); Prediabetes (finding)"
-    },
-    {
-      "questionId": "SL-53",
-      "system": "sql",
-      "answer": "**Patient:** Idalia306 Brakus656\n**ID:** 000cb105-0f6a-e089-2701-7fa5fdf7ec03\n**DOB:** 1954-02-12\n**Age:** 67 (at time of death, 2021-06-18)\n**Gender:** Female\n**Race:** Black/African American\n**Ethnicity:** Not Hispanic or Latino\n**Location:** Everett, Massachusetts\n**Language:** English\n**Insurance:** Medicare\n**Education:** High school diploma or GED\n**Employment:** Full-time\n**Housing:** Housed (6 occupants at address)\n**Annual Family Income:** ~$44,019",
-      "latencyMs": 5282,
-      "score": 0.8,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "Born 1954-02-12, Gender: F, Race: black, Ethnicity: nonhispanic, Location: Everett, Massachusetts"
-    },
-    {
-      "questionId": "SL-1",
-      "system": "sql",
-      "answer": "5.8% (measured 2021-06-09)",
-      "latencyMs": 2076,
-      "score": 0.3333333333333333,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "5.8 % (recorded 2021-06-09)"
-    },
-    {
-      "questionId": "SL-17",
-      "system": "sql",
-      "answer": "**Active Medications for Idalia306 Brakus656:**\n\n1. Ferrous sulfate 325 MG Oral Tablet (since 2010-03-26)\n2. Clopidogrel 75 MG Oral Tablet (since 2021-05-28)\n3. Simvastatin 20 MG Oral Tablet (since 2021-05-28)\n4. 24 HR Metoprolol succinate 100 MG Extended Release Oral Tablet (since 2021-05-28)\n5. Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray (since 2021-05-28)",
-      "latencyMs": 6847,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet; Clopidogrel 75 MG Oral Tablet; ferrous sulfate 325 MG Oral Tablet; Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray; Simvastatin 20 MG Oral Tablet"
-    },
-    {
-      "questionId": "SL-10",
-      "system": "sql-fts",
-      "answer": "134.5 mg/dL (2024-09-24)",
-      "latencyMs": 4160,
-      "score": 0.6666666666666666,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "134.5 mg/dL (recorded 2024-09-24)"
-    },
-    {
-      "questionId": "SL-29",
-      "system": "sql-fts",
-      "answer": "1. Educated to high school level (finding) — since 1972-04-07\n2. Prediabetes (finding) — since 2007-03-02\n3. Anemia (disorder) — since 2010-03-19\n4. Full-time employment (finding) — since 2019-05-10\n5. Medication review due (situation) — since 2020-05-15\n6. Loss of teeth (disorder) — since 2020-06-05\n7. Ischemic heart disease (disorder) — since 2021-05-21\n8. Abnormal findings diagnostic imaging heart+coronary circulation (finding) — since 2021-06-03\n9. History of coronary artery bypass grafting (situation) — since 2021-06-10",
-      "latencyMs": 5315,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "Abnormal findings diagnostic imaging heart+coronary circulat (finding); Anemia (disorder); Educated to high school level (finding); Full-time employment (finding); History of coronary artery bypass grafting (situation); Ischemic heart disease (disorder); Loss of teeth (disorder); Medication review due (situation); Prediabetes (finding)"
-    },
-    {
-      "questionId": "SL-53",
-      "system": "sql-fts",
-      "answer": "**Patient:** Idalia306 Brakus656\n**ID:** 000cb105-0f6a-e089-2701-7fa5fdf7ec03\n**DOB:** 1954-02-12\n**Age:** 67 (deceased 2021-06-18)\n**Gender:** Female\n**Race:** Black/African American\n**Ethnicity:** Not Hispanic or Latino\n**Location:** Everett, Massachusetts\n**Language:** English\n**Insurance:** Medicare\n**Education:** High school diploma or GED\n**Employment:** Full-time\n**Housing:** Housed (6 occupants at address)\n**Annual Income:** ~$44,019",
-      "latencyMs": 5951,
-      "score": 0.8,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "Born 1954-02-12, Gender: F, Race: black, Ethnicity: nonhispanic, Location: Everett, Massachusetts"
-    },
-    {
-      "questionId": "SL-1",
-      "system": "sql-fts",
-      "answer": "5.8% (2021-06-09)",
-      "latencyMs": 2078,
-      "score": 0.3333333333333333,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "5.8 % (recorded 2021-06-09)"
-    },
-    {
-      "questionId": "SL-17",
-      "system": "sql-fts",
-      "answer": "**Active medications for Idalia306 Brakus656:**\n\n1. Ferrous sulfate 325 MG Oral Tablet (since 2010-03-26)\n2. Clopidogrel 75 MG Oral Tablet (since 2021-05-28)\n3. Simvastatin 20 MG Oral Tablet (since 2021-05-28)\n4. 24 HR Metoprolol succinate 100 MG Extended Release Oral Tablet (since 2021-05-28)\n5. Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray (since 2021-05-28)",
-      "latencyMs": 6713,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet; Clopidogrel 75 MG Oral Tablet; ferrous sulfate 325 MG Oral Tablet; Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray; Simvastatin 20 MG Oral Tablet"
-    },
-    {
-      "questionId": "SL-10",
-      "system": "llm-only",
-      "answer": "134.5 mg/dL (2024-09-24)",
-      "latencyMs": 1783,
-      "score": 0.6666666666666666,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "134.5 mg/dL (recorded 2024-09-24)"
-    },
-    {
-      "questionId": "SL-29",
-      "system": "llm-only",
-      "answer": "1. Educated to high school level (since 1972-04-07)\n2. Prediabetes (since 2007-03-02)\n3. Anemia (since 2010-03-19)\n4. Full-time employment (since 2019-05-10)\n5. Medication review due (since 2020-05-15)\n6. Loss of teeth (since 2020-06-05)\n7. Ischemic heart disease (since 2021-05-21)\n8. Abnormal findings diagnostic imaging heart+coronary circulation (since 2021-06-03)\n9. History of coronary artery bypass grafting (since 2021-06-10)",
-      "latencyMs": 5115,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "Abnormal findings diagnostic imaging heart+coronary circulat (finding); Anemia (disorder); Educated to high school level (finding); Full-time employment (finding); History of coronary artery bypass grafting (situation); Ischemic heart disease (disorder); Loss of teeth (disorder); Medication review due (situation); Prediabetes (finding)"
-    },
-    {
-      "questionId": "SL-53",
-      "system": "llm-only",
-      "answer": "- **Name:** Idalia306 Brakus656\n- **ID:** 000cb105-0f6a-e089-2701-7fa5fdf7ec03\n- **DOB:** 1954-02-12\n- **DOD:** 2021-06-10\n- **Gender:** Female\n- **Race:** Black\n- **Ethnicity:** Non-Hispanic\n- **Marital Status:** Married\n- **Location:** Everett, Massachusetts 02149",
-      "latencyMs": 3235,
-      "score": 0.8,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "Born 1954-02-12, Gender: F, Race: black, Ethnicity: nonhispanic, Location: Everett, Massachusetts"
-    },
-    {
-      "questionId": "SL-1",
-      "system": "llm-only",
-      "answer": "5.8% (2021-06-09)",
-      "latencyMs": 4988,
-      "score": 0.3333333333333333,
-      "scoreMethod": "fuzzy",
-      "groundTruth": "5.8 % (recorded 2021-06-09)"
-    },
-    {
-      "questionId": "SL-17",
-      "system": "llm-only",
-      "answer": "1. Ferrous sulfate 325 MG Oral Tablet (since 2010-03-26)\n2. Clopidogrel 75 MG Oral Tablet (since 2021-05-28)\n3. Simvastatin 20 MG Oral Tablet (since 2021-05-28)\n4. Metoprolol succinate 100 MG 24HR Extended Release Oral Tablet (since 2021-05-28)\n5. Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray (since 2021-05-28)",
-      "latencyMs": 9628,
-      "score": 1,
-      "scoreMethod": "f1",
-      "groundTruth": "24 HR metoprolol succinate 100 MG Extended Release Oral Tablet; Clopidogrel 75 MG Oral Tablet; ferrous sulfate 325 MG Oral Tablet; Nitroglycerin 0.4 MG/ACTUAT Mucosal Spray; Simvastatin 20 MG Oral Tablet"
     }
   ]
 }
