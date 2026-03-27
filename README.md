@@ -1,8 +1,8 @@
-# ThesisBrainifai
+# EHR-Clinical-Assistant
 
 Thesis experiment testing whether **graph-based retrieval improves LLM clinical question answering** compared to SQL and LLM-only baselines — across both proprietary and open-source models.
 
-ThesisBrainifai is a [Brainifai](https://github.com/anagnole/brainifai) child instance — a specialized node with a custom EHR template, its own graph schema, custom context-building MCP tools, and an evaluation harness. It includes a doctor-facing clinical assistant UI with a knowledge graph visualizer.
+EHR-Clinical-Assistant is a [Brainifai](https://github.com/anagnole/brainifai) child instance — a specialized node with a custom EHR template, its own graph schema, custom context-building MCP tools, and an evaluation harness. It includes a doctor-facing clinical assistant UI with a knowledge graph visualizer.
 
 [![Demo](docs/demo-screenshot.png)](https://youtu.be/X7BhfGabk70)
 > **[Watch the demo video](https://youtu.be/X7BhfGabk70)** — Clinical chat with graph-based retrieval, document generation, and multi-model support.
